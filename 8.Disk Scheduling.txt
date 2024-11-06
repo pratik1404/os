@@ -1,0 +1,161 @@
+---------------------------------------ASSI8---------------------SSTF-----------------CSACN-------------------C-LOOK-------------------------------
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+#define MAX_REQUESTS 100
+
+void sstf(int requests[], int n, int initial_head) {
+    bool visited[MAX_REQUESTS] = {false};
+    int current_head = initial_head;
+    int total_seek = 0;
+
+    printf("SSTF Disk Scheduling:\n");
+    
+    for (int i = 0; i < n; i++) {
+        int min_seek = 10000; // Arbitrarily large number
+        int min_index = -1;
+
+        // Find the closest request
+        for (int j = 0; j < n; j++) {
+            if (!visited[j]) {
+                int seek = abs(requests[j] - current_head);
+                if (seek < min_seek) {
+                    min_seek = seek;
+                    min_index = j;
+                }
+            }
+        }
+
+        // Visit the selected request
+        visited[min_index] = true;
+        printf("Servicing request: %d (Seek: %d)\n", requests[min_index], min_seek);
+        total_seek += min_seek;
+        current_head = requests[min_index];
+    }
+
+    printf("Total Seek Time (SSTF): %d\n", total_seek);
+}
+
+void scan(int requests[], int n, int initial_head, int disk_size) {
+    int total_seek = 0;
+    int current_head = initial_head;
+    int seek_sequence[MAX_REQUESTS];
+    int seq_index = 0;
+
+    // Sort the requests
+    for (int i = 0; i < n; i++) {
+        for (int j = i + 1; j < n; j++) {
+            if (requests[i] > requests[j]) {
+                int temp = requests[i];
+                requests[i] = requests[j];
+                requests[j] = temp;
+            }
+        }
+    }
+
+    printf("\nSCAN Disk Scheduling:\n");
+    // Scan towards the end
+    for (int i = 0; i < n; i++) {
+        if (requests[i] >= current_head) {
+            seek_sequence[seq_index++] = requests[i];
+        }
+    }
+
+    // Service the end of the disk
+    if (current_head < disk_size) {
+        seek_sequence[seq_index++] = disk_size; // Move to the end of the disk
+        total_seek += abs(current_head - disk_size);
+        current_head = disk_size;
+    }
+
+    // Scan back to the beginning
+    for (int i = n - 1; i >= 0; i--) {
+        if (requests[i] < current_head) {
+            seek_sequence[seq_index++] = requests[i];
+        }
+    }
+
+    // Calculate total seek time
+    for (int i = 0; i < seq_index - 1; i++) {
+        total_seek += abs(seek_sequence[i] - seek_sequence[i + 1]);
+    }
+
+    // Print the seek sequence
+    for (int i = 0; i < seq_index; i++) {
+        printf("Servicing request: %d\n", seek_sequence[i]);
+    }
+    printf("Total Seek Time (SCAN): %d\n", total_seek);
+}
+
+void clook(int requests[], int n, int initial_head) {
+    int total_seek = 0;
+    int current_head = initial_head;
+    int seek_sequence[MAX_REQUESTS];
+    int seq_index = 0;
+
+    // Sort the requests
+    for (int i = 0; i < n; i++) {
+        for (int j = i + 1; j < n; j++) {
+            if (requests[i] > requests[j]) {
+                int temp = requests[i];
+                requests[i] = requests[j];
+                requests[j] = temp;
+            }
+        }
+    }
+
+    printf("\nC-Look Disk Scheduling:\n");
+    // Service requests from the current head position
+    for (int i = 0; i < n; i++) {
+        if (requests[i] >= current_head) {
+            seek_sequence[seq_index++] = requests[i];
+        }
+    }
+
+    // Move to the beginning for the remaining requests
+    for (int i = 0; i < n; i++) {
+        if (requests[i] < current_head) {
+            seek_sequence[seq_index++] = requests[i];
+        }
+    }
+
+    // Calculate total seek time
+    for (int i = 0; i < seq_index - 1; i++) {
+        total_seek += abs(seek_sequence[i] - seek_sequence[i + 1]);
+    }
+
+    // Print the seek sequence
+    for (int i = 0; i < seq_index; i++) {
+        printf("Servicing request: %d\n", seek_sequence[i]);
+    }
+    printf("Total Seek Time (C-Look): %d\n", total_seek);
+}
+
+int main() {
+    int requests[MAX_REQUESTS], n, initial_head, disk_size;
+
+    // Input the number of requests and their positions
+    printf("Enter number of requests: ");
+    scanf("%d", &n);
+    printf("Enter the disk size: ");
+    scanf("%d", &disk_size);
+    printf("Enter the initial head position: ");
+    scanf("%d", &initial_head);
+
+    printf("Enter the requests:\n");
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &requests[i]);
+    }
+
+    // Call disk scheduling algorithms
+    sstf(requests, n, initial_head);
+    scan(requests, n, initial_head, disk_size);
+    clook(requests, n, initial_head);
+
+    return 0;
+}      

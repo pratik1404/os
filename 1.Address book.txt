@@ -1,0 +1,88 @@
+----------------- ASSI1-------------------------------------------------------------------
+
+#!/bin/bash
+
+ADDRESS_BOOK="address_book.txt"
+
+# Function to create the address book
+create_address_book() {
+    if [ -f "$ADDRESS_BOOK" ]; then
+        echo "Address book already exists."
+    else
+        touch "$ADDRESS_BOOK"
+        echo "Address book created."
+    fi
+}
+
+# Function to view the address book
+view_address_book() {
+    if [ -s "$ADDRESS_BOOK" ]; then
+        echo "Address Book Contents:"
+        cat "$ADDRESS_BOOK"
+    else
+        echo "Address book is empty."
+    fi
+}
+
+# Function to insert a record
+insert_record() {
+    echo "Enter name:"
+    read name
+    echo "Enter phone number:"
+    read phone
+    echo "$name: $phone" >> "$ADDRESS_BOOK"
+    echo "Record added."
+}
+
+# Function to delete a record
+delete_record() {
+    echo "Enter name of the record to delete:"
+    read name
+    grep -v "^$name:" "$ADDRESS_BOOK" > temp.txt && mv temp.txt "$ADDRESS_BOOK"
+    echo "Record deleted."
+}
+
+# Function to modify a record
+modify_record() {
+    echo "Enter name of the record to modify:"
+    read name
+    if grep -q "^$name:" "$ADDRESS_BOOK"; then
+        echo "Enter new phone number:"
+        read new_phone
+        sed -i "s/^$name:.*/$name: $new_phone/" "$ADDRESS_BOOK"
+        echo "Record modified."
+    else
+        echo "Record not found."
+    fi
+}
+
+# Main menu loop
+while true; do
+    echo "Address Book Menu:"
+    echo "1. Create Address Book"
+    echo "2. View Address Book"
+    echo "3. Insert Record"
+    echo "4. Delete Record"
+    echo "5. Modify Record"
+    echo "6. Exit"
+    echo -n "Choose an option (1-6): "
+    read option
+
+    case $option in
+        1) create_address_book ;;
+        2) view_address_book ;;
+        3) insert_record ;;
+        4) delete_record ;;
+        5) modify_record ;;
+        6) echo "Exiting..." ; exit 0 ;;
+        *) echo "Invalid option. Please choose again." ;;
+    esac
+done
+
+
+cd ~/Documents                # Navigate to the directory containing the script
+ls                             # List files to confirm the script is there
+chmod +x address_book.sh      # Make the script executable
+./address_book.sh   
+
+

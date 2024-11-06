@@ -1,0 +1,154 @@
+----------------ASS4-----PART-A----------------- 
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+
+#define MAX 10 // Maximum buffer size
+
+int buffer[MAX]; // Shared buffer
+int in = 0; // Index for the next produced item
+int out = 0; // Index for the next consumed item
+
+sem_t empty; // Semaphore for empty slots
+sem_t full; // Semaphore for full slots
+pthread_mutex_t mutex; // Mutex for mutual exclusion
+
+void *producer(void *arg) {
+    int item;
+    for (int i = 0; i < 20; i++) {
+        item = rand(); // Produce an item
+
+        sem_wait(&empty); // Decrease empty count
+        pthread_mutex_lock(&mutex); // Enter critical section
+
+        buffer[in] = item; // Add item to buffer
+        printf("Producer produced %d\n", item);
+        in = (in + 1) % MAX; // Move to next index
+
+        pthread_mutex_unlock(&mutex); // Exit critical section
+        sem_post(&full); // Increase full count
+    }
+    return NULL;
+}
+
+void *consumer(void *arg) {
+    int item;
+    for (int i = 0; i < 20; i++) {
+        sem_wait(&full); // Decrease full count
+        pthread_mutex_lock(&mutex); // Enter critical section
+
+        item = buffer[out]; // Remove item from buffer
+        printf("Consumer consumed %d\n", item);
+        out = (out + 1) % MAX; // Move to next index
+
+        pthread_mutex_unlock(&mutex); // Exit critical section
+        sem_post(&empty); // Increase empty count
+    }
+    return NULL;
+}
+
+int main() {
+    pthread_t prod, cons;
+
+    sem_init(&empty, 0, MAX); // Initialize empty semaphore
+    sem_init(&full, 0, 0); // Initialize full semaphore
+    pthread_mutex_init(&mutex, NULL); // Initialize mutex
+
+    pthread_create(&prod, NULL, producer, NULL); // Create producer thread
+    pthread_create(&cons, NULL, consumer, NULL); // Create consumer thread
+
+    pthread_join(prod, NULL); // Wait for producer to finish
+    pthread_join(cons, NULL); // Wait for consumer to finish
+
+    // Cleanup
+    sem_destroy(&empty);
+    sem_destroy(&full);
+    pthread_mutex_destroy(&mutex);
+
+    return 0;
+}
+
+
+
+
+
+--------------------------ASSI4-------------------PART-B-----------------
+ //Code for Reader-Writer Problem with Reader Priority
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+
+#define MAX_READERS 10
+
+sem_t write_lock; // Semaphore for writing
+pthread_mutex_t read_count_lock; // Mutex for reader count access
+int read_count = 0; // Current count of readers
+
+void *reader(void *arg) {
+    int id = *(int *)arg;
+
+    pthread_mutex_lock(&read_count_lock); // Enter critical section for reader count
+    read_count++;
+    if (read_count == 1) {
+        sem_wait(&write_lock); // First reader locks the writer
+    }
+    pthread_mutex_unlock(&read_count_lock); // Exit critical section for reader count
+
+    // Reading
+    printf("Reader %d is reading\n", id);
+    sleep(1); // Simulate reading time
+
+    pthread_mutex_lock(&read_count_lock); // Enter critical section for reader count
+    read_count--;
+    if (read_count == 0) {
+        sem_post(&write_lock); // Last reader releases the writer
+    }
+    pthread_mutex_unlock(&read_count_lock); // Exit critical section for reader count
+
+    return NULL;
+}
+
+void *writer(void *arg) {
+    int id = *(int *)arg;
+
+    sem_wait(&write_lock); // Request write access
+    printf("Writer %d is writing\n", id);
+    sleep(1); // Simulate writing time
+    sem_post(&write_lock); // Release write access
+
+    return NULL;
+}
+
+int main() {
+    pthread_t readers[MAX_READERS], writers[MAX_READERS];
+    sem_init(&write_lock, 0, 1); // Initialize write semaphore
+    pthread_mutex_init(&read_count_lock, NULL); // Initialize reader count mutex
+
+    // Create reader and writer threads
+    for (int i = 0; i < MAX_READERS; i++) {
+        int *id = malloc(sizeof(int));
+        *id = i + 1; // Thread ID starting from 1
+        pthread_create(&readers[i], NULL, reader, id);
+        pthread_create(&writers[i], NULL, writer, id);
+    }
+
+    // Wait for all readers and writers to finish
+    for (int i = 0; i < MAX_READERS; i++) {
+        pthread_join(readers[i], NULL);
+        pthread_join(writers[i], NULL);
+    }
+
+    // Cleanup
+    sem_destroy(&write_lock);
+    pthread_mutex_destroy(&read_count_lock);
+
+    return 0;
+}
+
+
